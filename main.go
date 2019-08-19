@@ -52,17 +52,16 @@ func (st StatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	w.Write(responseBody)
 }
 
-func downloadSingleFile(url string, download_id xid)
-{
+func downloadSingleFile(url string, download_id string, status *string, files map[string]string){
 	fmt.Println(url)
 	file_id := xid.New()
-	filepath := "/tmp/"+download_id.String()+"-"+file_id.String()
+	filepath := "/tmp/"+download_id+"-"+file_id.String()
 	err := DownloadFile(filepath, url)
 	if err != nil {
-	status = "FAILURE"
-	panic(err)
+		*status = "FAILURE"
+		panic(err)
 	} else {
-	files[url] = filepath
+		files[url] = filepath
 	}
 }
 
@@ -81,20 +80,23 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	}
 	if(payload.Type == "serial"){
 		status := "SUCCESSFUL"
-		download_id := xid.New()
+		download_id := xid.New().String()
 		files := make(map[string]string)
-		for _,url := range payload.Urls{
-			downloadSingleFile(url,download_id)
-		}
-		DownloadsInfo[download_id.String()] = DownloadInfo{
-			Id : download_id.String(),
+		DownloadsInfo[download_id] = DownloadInfo{
+			Id : download_id,
 			Start_time : "2019-08-18 09:46:42.89588 +0530 IST m=+12.135120014",
-			End_time : "2019-08-18 09:48:46.287554 +0530 IST m=+135.526087303",
-			Status : status,
+			//End_time : "2019-08-18 09:48:46.287554 +0530 IST m=+135.526087303",
+			//Status : status,
 			Download_type : "serial",
 			Files : files,
 		}
-		responseid,_ := json.Marshal(Response{Id: download_id.String()})
+		for _,url := range payload.Urls{
+			downloadSingleFile(url, download_id, &status, files)
+		}
+		di := DownloadsInfo[download_id]
+		di.End_time = "2019-08-18 09:46:42.89588 +0530 IST m=+12.135120014"
+		di.Status = status
+		responseid,_ := json.Marshal(Response{Id: download_id})
 		w.Header().Set("Content-Type","application/json")
 		w.Write(responseid)
 	}
@@ -130,6 +132,7 @@ func main(){
 	h.Handle("/download", DownloadHandler{})
 	h.HandleFunc("/browse", func(w http.ResponseWriter, r *http.Request){
 		responseBody,_ := json.Marshal(DownloadsInfo)
+		w.Header().Set("Content-Type","application/json")
 		w.Write(responseBody)
 	})
 	err := http.ListenAndServe(":8002", h)
