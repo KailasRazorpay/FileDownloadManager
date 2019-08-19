@@ -30,6 +30,11 @@ type Response struct{
 	Id string
 }
 
+type Error struct{
+	Internal_code int
+	Message string
+}
+
 var DownloadsInfo = map[string]DownloadInfo{}
 
 type HealthHandler struct{}
@@ -44,13 +49,23 @@ type StatusHandler struct{}
 func (st StatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	segments := strings.Split(r.URL.Path, "/")
 	id := segments[2]
-	fmt.Println(DownloadsInfo[id])
-	responseBody,err := json.Marshal(DownloadsInfo[id])
-	if err != nil{
-		panic(err)
+	if _ , val := DownloadsInfo[id]; val{
+		fmt.Println(DownloadsInfo[id])
+		responseBody,err := json.Marshal(DownloadsInfo[id])
+		if err != nil{
+			panic(err)
+		}
+		w.Header().Set("Content-Type","application/json")
+		w.Write(responseBody)
+	} else{
+		errorBody := Error{
+			Internal_code : 4001,
+			Message : "unknown download id",
+		}
+		w.Header().Set("Content-Type","application/json")
+		error,_ := json.Marshal(errorBody)
+		w.Write(error)
 	}
-	w.Header().Set("Content-Type","application/json")
-	w.Write(responseBody)
 }
 
 func downloadSingleFile(url string, download_id string, status *string, files map[string]string){
@@ -102,8 +117,7 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 		responseid,_ := json.Marshal(Response{Id: download_id})
 		w.Header().Set("Content-Type","application/json")
 		w.Write(responseid)
-	}
-	if(payload.Type == "concurrent"){
+	} else if(payload.Type == "concurrent"){
 		status := "PENDING"
 		download_id := xid.New().String()
 		responseid,_ := json.Marshal(Response{Id: download_id})
@@ -126,6 +140,14 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 			Download_type : payload.Type,
 			Files : files,
 		}
+	} else {
+		errorBody := Error{
+		Internal_code : 4002,
+		Message : "unknown type of download",
+		}
+		w.Header().Set("Content-Type","application/json")
+		error,_ := json.Marshal(errorBody)
+		w.Write(error)
 	}
 }
 
@@ -155,9 +177,9 @@ func DownloadFile(filepath string, url string) error {
 func main(){
 	h := http.NewServeMux()
 	h.Handle("/health", HealthHandler{})
-	h.Handle("/download/", StatusHandler{})
-	h.Handle("/download", DownloadHandler{})
-	h.HandleFunc("/browse", func(w http.ResponseWriter, r *http.Request){
+	h.Handle("/downloads/", StatusHandler{})
+	h.Handle("/downloads", DownloadHandler{})
+	h.HandleFunc("/files", func(w http.ResponseWriter, r *http.Request){
 		responseBody,_ := json.Marshal(DownloadsInfo)
 		w.Header().Set("Content-Type","application/json")
 		w.Write(responseBody)
