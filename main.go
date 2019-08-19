@@ -9,12 +9,13 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type DownloadInfo struct{
 	Id string
-	Start_time string
-	End_time string
+	Start_time time.Time
+	End_time time.Time
 	Status string
 	Download_type string
 	Files map[string]string
@@ -79,26 +80,52 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 		panic(err)
 	}
 	if(payload.Type == "serial"){
-		status := "SUCCESSFUL"
+		status := "PENDING"
 		download_id := xid.New().String()
 		files := make(map[string]string)
-		DownloadsInfo[download_id] = DownloadInfo{
-			Id : download_id,
-			Start_time : "2019-08-18 09:46:42.89588 +0530 IST m=+12.135120014",
-			//End_time : "2019-08-18 09:48:46.287554 +0530 IST m=+135.526087303",
-			//Status : status,
-			Download_type : "serial",
-			Files : files,
-		}
+		start_time := time.Now()
 		for _,url := range payload.Urls{
 			downloadSingleFile(url, download_id, &status, files)
 		}
-		di := DownloadsInfo[download_id]
-		di.End_time = "2019-08-18 09:46:42.89588 +0530 IST m=+12.135120014"
-		di.Status = status
+		if status == "PENDING" {
+			status = "SUCCESSFUL"
+		}
+		end_time := time.Now()
+		DownloadsInfo[download_id] = DownloadInfo{
+			Id : download_id,
+			Start_time : start_time,
+			End_time : end_time,
+			Status : status,
+			Download_type : payload.Type,
+			Files : files,
+		}
 		responseid,_ := json.Marshal(Response{Id: download_id})
 		w.Header().Set("Content-Type","application/json")
 		w.Write(responseid)
+	}
+	if(payload.Type == "concurrent"){
+		status := "PENDING"
+		download_id := xid.New().String()
+		responseid,_ := json.Marshal(Response{Id: download_id})
+		w.Header().Set("Content-Type","application/json")
+		w.Write(responseid)
+		files := make(map[string]string)
+		start_time := time.Now()
+		for _,url := range payload.Urls{
+			go downloadSingleFile(url, download_id, &status, files)
+		}
+		if status == "PENDING" {
+			status = "SUCCESSFUL"
+		}
+		end_time := time.Now()
+		DownloadsInfo[download_id] = DownloadInfo{
+			Id : download_id,
+			Start_time : start_time,
+			End_time : end_time,
+			Status : status,
+			Download_type : payload.Type,
+			Files : files,
+		}
 	}
 }
 
