@@ -9,8 +9,10 @@ import (
 	"time"
 )
 
+//Maximum number of concurrent goroutines allowed
 var numberOfLinks int = 2
 
+//Handler for responding to /health
 type HealthHandler struct{}
 
 func (re HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
@@ -18,6 +20,7 @@ func (re HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintln(w,"You have hit the health tag")
 }
 
+//Handler for responding to /downloads/<download-id>
 type StatusHandler struct{}
 
 func (st StatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
@@ -42,6 +45,7 @@ func (st StatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	}
 }
 
+//Handler for responding to download requests at /downloads
 type DownloadHandler struct{}
 
 func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
