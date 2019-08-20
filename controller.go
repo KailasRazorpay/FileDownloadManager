@@ -92,7 +92,7 @@ type HealthHandler struct{}
 
 func (re HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	w.WriteHeader(200)
-	fmt.Fprintln(w,"You have hit the health tag")
+	fmt.Fprintln(w,"OK")
 }
 
 //Handler for responding to /downloads/<download-id>
