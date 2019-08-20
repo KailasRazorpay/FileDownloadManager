@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var numberOfLinks int = 2
+
 type HealthHandler struct{}
 
 func (re HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
@@ -84,29 +86,38 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 		w.Header().Set("Content-Type","application/json")
 		w.Write(responseid)
 		var ch = make(chan string)
-		for i := 0; i < 2; i++ {
+		for i := 0; i < numberOfLinks; i++ {
 			go func() {
 				for {
 					url, ok := <-ch
 					if !ok {
-						return //close go routine when channel is closed
+						return
 					}
 					downloadSingleFile(url, download_id, &status, files)
 				}
 			}()
 		}
 		start_time := time.Now()
+		var end_time = time.Now()
+		DownloadsInfo[download_id] = DownloadInfo{
+			Id : download_id,
+			Start_time : start_time,
+			End_time : end_time,
+			Status : status,
+			Download_type : payload.Type,
+			Files : files,
+		}
 		go func() {
 			for _, url := range payload.Urls {
 				ch <- url
 			}
 			close(ch)
+			if status == "PENDING" {
+				status = "SUCCESSFUL"
+			}
+			end_time = time.Now()
 			return
 		}()
-		if status == "PENDING" {
-			status = "SUCCESSFUL"
-		}
-		end_time := time.Now()
 		DownloadsInfo[download_id] = DownloadInfo{
 			Id : download_id,
 			Start_time : start_time,
