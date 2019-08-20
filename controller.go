@@ -26,19 +26,31 @@ type StatusHandler struct{}
 func (st StatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	segments := strings.Split(r.URL.Path, "/")
 	id := segments[2]
+
+	//Checks if download id is valid
 	if _ , val := DownloadsInfo[id]; val{
+
+		//Prints download information to console
 		fmt.Println(DownloadsInfo[id])
+
+		//Converts download information to json result
 		responseBody,err := json.Marshal(DownloadsInfo[id])
 		if err != nil{
 			panic(err)
 		}
+
+		//Returns download information in response
 		w.Header().Set("Content-Type","application/json")
 		w.Write(responseBody)
-	} else{
+	} else{	//If download received is invalid
+
+		//Prepares error message
 		errorBody := Error{
 			Internal_code : 4001,
 			Message : "unknown download id",
 		}
+
+		//Returns error message
 		w.Header().Set("Content-Type","application/json")
 		error,_ := json.Marshal(errorBody)
 		w.Write(error)
@@ -131,10 +143,14 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 			return
 		}()
 	} else {
+
+		//Prepares error message
 		errorBody := Error{
 			Internal_code : 4002,
 			Message : "unknown type of download",
 		}
+
+		//Returns error message
 		w.Header().Set("Content-Type","application/json")
 		error,_ := json.Marshal(errorBody)
 		w.Write(error)
