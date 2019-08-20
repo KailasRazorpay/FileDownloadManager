@@ -116,16 +116,16 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 				status = "SUCCESSFUL"
 			}
 			endTime = time.Now()
+			DownloadsInfo[downloadId] = DownloadInfo{
+				Id :            downloadId,
+				Start_time :    startTime,
+				End_time :      endTime,
+				Status :        status,
+				Download_type : payload.Type,
+				Files :         files,
+			}
 			return
 		}()
-		DownloadsInfo[downloadId] = DownloadInfo{
-			Id :            downloadId,
-			Start_time :    startTime,
-			End_time :      endTime,
-			Status :        status,
-			Download_type : payload.Type,
-			Files :         files,
-		}
 	} else {
 		errorBody := Error{
 			Internal_code : 4002,

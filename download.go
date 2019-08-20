@@ -8,16 +8,22 @@ import (
 	"os"
 )
 
-func downloadSingleFile(url string, download_id string, status *string, files map[string]string){
+//Creates filepath, calls DownloadFile on the filepath and url, and updates download information
+func downloadSingleFile(url string, downloadId string, status *string, files map[string]string){
+
+	//Logs url to console window
 	fmt.Println(url)
-	file_id := xid.New()
-	filepath := "/tmp/" + download_id + "-" + file_id.String()
-	err := DownloadFile(filepath, url)
+
+	//Creates filepath to store download using unique id generated and stored in fileId
+	fileId := xid.New()
+	filePath := "/tmp/" + downloadId + "-" + fileId.String()
+	err := DownloadFile(filePath, url)
 	if err != nil {
 		*status = "FAILURE"
 		panic(err)
 	} else {
-		files[url] = filepath
+		//Adds file name and url to download information
+		files[url] = filePath
 	}
 }
 
