@@ -57,32 +57,32 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	}
 	if(payload.Type == "serial"){
 		status := "PENDING"
-		download_id := xid.New().String()
+		downloadId := xid.New().String()
 		files := make(map[string]string)
-		start_time := time.Now()
+		startTime := time.Now()
 		for _,url := range payload.Urls{
-			downloadSingleFile(url, download_id, &status, files)
+			downloadSingleFile(url, downloadId, &status, files)
 		}
 		if status == "PENDING" {
 			status = "SUCCESSFUL"
 		}
-		end_time := time.Now()
-		DownloadsInfo[download_id] = DownloadInfo{
-			Id : download_id,
-			Start_time : start_time,
-			End_time : end_time,
-			Status : status,
+		endTime := time.Now()
+		DownloadsInfo[downloadId] = DownloadInfo{
+			Id :            downloadId,
+			Start_time :    startTime,
+			End_time :      endTime,
+			Status :        status,
 			Download_type : payload.Type,
-			Files : files,
+			Files :         files,
 		}
-		responseid,_ := json.Marshal(Response{Id: download_id})
+		responseid,_ := json.Marshal(Response{Id: downloadId})
 		w.Header().Set("Content-Type","application/json")
 		w.Write(responseid)
 	} else if(payload.Type == "concurrent"){
 		status := "PENDING"
-		download_id := xid.New().String()
+		downloadId := xid.New().String()
 		files := make(map[string]string)
-		responseid,_ := json.Marshal(Response{Id: download_id})
+		responseid,_ := json.Marshal(Response{Id: downloadId})
 		w.Header().Set("Content-Type","application/json")
 		w.Write(responseid)
 		var ch = make(chan string)
@@ -93,19 +93,19 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 					if !ok {
 						return
 					}
-					downloadSingleFile(url, download_id, &status, files)
+					downloadSingleFile(url, downloadId, &status, files)
 				}
 			}()
 		}
-		start_time := time.Now()
-		var end_time = time.Now()
-		DownloadsInfo[download_id] = DownloadInfo{
-			Id : download_id,
-			Start_time : start_time,
-			End_time : end_time,
-			Status : status,
+		startTime := time.Now()
+		endTime := time.Now()
+		DownloadsInfo[downloadId] = DownloadInfo{
+			Id :            downloadId,
+			Start_time :    startTime,
+			End_time :      endTime,
+			Status :        status,
 			Download_type : payload.Type,
-			Files : files,
+			Files :         files,
 		}
 		go func() {
 			for _, url := range payload.Urls {
@@ -115,16 +115,16 @@ func (d DownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 			if status == "PENDING" {
 				status = "SUCCESSFUL"
 			}
-			end_time = time.Now()
+			endTime = time.Now()
 			return
 		}()
-		DownloadsInfo[download_id] = DownloadInfo{
-			Id : download_id,
-			Start_time : start_time,
-			End_time : end_time,
-			Status : status,
+		DownloadsInfo[downloadId] = DownloadInfo{
+			Id :            downloadId,
+			Start_time :    startTime,
+			End_time :      endTime,
+			Status :        status,
 			Download_type : payload.Type,
-			Files : files,
+			Files :         files,
 		}
 	} else {
 		errorBody := Error{
